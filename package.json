@@ -4,19 +4,21 @@
   "description": "Nextra docs template",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "build": "next build && next export",
+    "predeploy": "npm run build",
+    "deploy": "next build && next export && touch out/.nojekyll && git add -f out/ && git commit -m 'deploy to gh-pages' && git subtree push --prefix out origin gh-pages"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/shuding/nextra-docs-template.git"
+    "url": "git+https://github.com/mobi-community/mobi-docs"
   },
   "author": "Shu Ding <g@shud.in>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/shuding/nextra-docs-template/issues"
+    "url": "https://github.com/mobi-community/mobi-docs/issues"
   },
-  "homepage": "https://github.com/shuding/nextra-docs-template#readme",
+  "homepage": "http://mobi-community.github.io/mobi-docs",
   "dependencies": {
     "next": "^13.0.6",
     "nextra": "latest",
@@ -26,6 +28,7 @@
   },
   "devDependencies": {
     "@types/node": "18.11.10",
+    "gh-pages": "^6.1.1",
     "typescript": "^4.9.3"
   }
 }
