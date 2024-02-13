@@ -1,0 +1,176 @@
+## ✨ `useFormState`
+
+> ⚠️ CANARY!
+
+- 해당 기능은 아직 React의 Canary/Experimental 채널에서만 사용 가능합니다.
+- 또한 해당 기능의 이점을 완전히 사용하려면 React의 서버 컴포넌트를 지원하는 프레임워크의 사용이 필요합니다.
+
+### 📑 Summary
+
+`useFormState`란 form 액션의 결과에 기반하여 상태를 업데이트 할 수 있게 해주는 훅 함수입니다.
+
+```js
+const [state, formAction] = useFormState(fn, initialState, permalink?);
+```
+
+### 🤔 어떻게 사용할 수 있까요?
+
+1. form 액션이 호출되었을 때 업데이트 될 상태 생성을 위해 컴포넌트의 상단에 `useFormState`를 호출해줍니다.
+
+- form이 제출된 마지막 순간에 액션에서 반환된 값에 접근할 수 있습니다.
+
+```js
+import { useFormState } from "react-dom";
+
+function StatefulForm({}) {
+  const [state, formAction] = useFormState(action, null);
+  return (
+    <form>
+      {state}
+      <button formAction={formAction}>Increment</button>
+    </form>
+  );
+}
+```
+
+2. `useFormState`에 초기 상태로서 이미 존재하는 form 액션 함수를 넘겨줄 수 있습니다.
+
+- 이때 `useFormState`는 당신의 form에서 사용하는 새로운 액션을 가장 최신의 form 상태와 함께 반환합니다.
+- 가장 최신의 form 상태는 또한 당신이 제공한 함수에도 전달됩니다.
+
+```js
+import { useFormState } from "react-dom";
+
+// form 액션 함수
+async function increment(previousState, formData) {
+  return previousState + 1;
+}
+
+function StatefulForm({}) {
+  const [state, formAction] = useFormState(increment, 0);
+  return (
+    <form>
+      {state}
+      <button formAction={formAction}>Increment</button>
+    </form>
+  );
+}
+```
+
+> form 상태란?
+
+- form이 마지막으로 제출되었을 때 액션에 의해 반환된 값을 의미합니다.
+- 아직 form이 제출되지 않았다면 form의 상태는 당신이 전달한 초기 상태가 form의 상태가 됩니다.
+
+> `action` 함수
+
+- form이 제출되면 제공된 액션 함수가 호출되고, 이 함수의 반환 값은 이후 form의 현재 상태가 됩니다.
+
+```js
+function action(currentState, formData) {
+  // ...
+  return "next state";
+}
+```
+
+- `currentState`
+  - 액션 함수의 첫 번째 인자
+  - form이 처음 제출 되었을 때에는 제공된 초기값이고, 이후 제출 과정에서는 액션이 가장 마지막에 호출되었을 때의 반환 값이 현재 상태 값이 됩니다.
+- 다른 인자들의 경우 `useFormState`를 사용하지 않았을 때와 동일하게 전달됩니다.
+
+> Parameters
+
+| Parameter              | Detail                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| :--------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `fn`                   | - form이 제출되거나 버튼이 클릭되었을 때 호출될 함수 <br/> - 함수가 호출되면, form의 이전 상태값을 초기 인자로 받고 이후에는 form 액션이 일반적으로 받게 되는 인수들을 받습니다. <br/> - form의 이전 상태는 처음에는 당신이 전달한 `initialState`가 될 것이고, 이후에는 이전 반환값이 될 것입니다.                                                                                                                                                                                                                                  |
+| `initialState`         | - 상태의 초기값 <br/> - 직렬화(메모리를 디스트에 저장하거나 네트워크 통신에 사용하기 위한 형식으로 변환하는 것)가 가능한 모든 값이 올 수 있습니다. <br/> - 이 인수는 액션의 첫 번째 호출 이후에는 무시됩니다.                                                                                                                                                                                                                                                                                                                       |
+| `permalink` (optional) | - 이 form이 수정하게 될 고유한 페이지 URL을 포함하는 문자열 <br/> - **피드와 같이 동적인 콘텐츠가 있는 페이지에서 점진적 변화와 함께 사용할 경우** <br/> : 만약 `fn`이 서버 액션이고 form이 JS 번들이 로드되기 전에 제출되었다면 브라우저는 현재 페이지 URL이 아닌 특정된 permalink URL로 이동합니다. <br/> - React가 상태를 어떻게 전달할지 알 수 있도록 동일한 액션 `fn`과 `permalink`를 포함하는 같은 form 컴포넌트가 목적지인 페이지에서도 렌더링되어야 합니다. <br/> - form이 hydrate 되고 나면 이 파라미터는 효력을 잃습니다. |
+
+> 반환값
+
+- 두 개의 값을 갖는 배열을 반환합니다.
+  ```
+  [현재 상태, 새로운 액션]
+  ```
+
+1.  현재 상태
+
+- 처음에는 전달한 `initialState`와 일치합니다.
+- 액션이 호출된 이후(form이 제출된 이후)에는 당신이 제공한 액션에 의해 반환되는 값과 일치하게 됩니다.
+
+2.  새로운 액션
+
+- form 컴포넌트의 `action` prop으로 전달할 수 있습니다.
+- form 내부의 버튼 컴포넌트에 `formAction` prop으로 전달할 수 있습니다.
+
+### 🧐 언제 사용할 수 있을까요?
+
+#### 📍 form 제출 이후 form 에러 보여주기
+
+- 서버 액션에 의해 반환되는 에러 메세지를 보여주려면 호출되는 액션을 `useFormState`로 감싸야 합니다.
+
+> form 컴포넌트
+
+```js
+import { useState } from "react";
+import { useFormState } from "react-dom";
+import { addToCart } from "./actions.js";
+
+function AddToCartForm({ quantity, itemTitle }) {
+  const [message, formAction] = useFormState(addToCart, null);
+  return (
+    <form action={formAction}>
+      <h2>{itemTitle}</h2>
+      <input type='hidden' name='quantity' value={quantity} />
+      <button type='submit'>장바구니 추가</button>
+      {message}
+    </form>
+  );
+}
+
+export default function App() {
+  return (
+    <>
+      <h1>useFormState</h1>
+      <AddToCartForm quantity='0' itemTitle='자바스크립트 Deep Dive' />
+      <AddToCartForm quantity='10' itemTitle='리액트 Deep Dive' />
+    </>
+  );
+}
+```
+
+> action 함수
+
+```js
+"use server";
+
+export async function addToCart(prevState, queryData) {
+  const quantity = queryData.get("quantity");
+  if (Number(quantity) > 0) {
+    return "정상적으로 추가되었습니다.";
+  } else {
+    return "🚨 Error! 상품이 매진 되어 추가할 수 없습니다.";
+  }
+}
+```
+
+#### 📍 form 제출 이후 구조화된 정보 보여주기
+
+### 📢 사용 시 주의할 점
+
+> import를 제대로 하자!
+
+- `useFormState`는 `react`가 아닌 `react-dom`에서 import 되어야 합니다.
+
+> React 서버 컴포넌트를 지원하는 프레임워크와 함께 사용할 경우
+
+- `useFormState`는 **form의 제출에 따른 서버의 응답값**을 hydration 작업이 완료되기도 전에 보여지도록 해줍니다.
+- 따라서 서버 컴포넌트와 함께 사용할 때 `useFormState`는 JS가 클라이언트 측에서 실행되기 전에 form을 상호작용 가능하도록 만들어줍니다.
+- 하지만 서버 컴포넌트와 함께 사용하지 않는다면 이 기능은 컴포넌트의 **일반 상태**와 동일합니다.
+
+### 🚨 TroubleShooting
+
+### 🔎 References
+
+- [React.dev - useFormState](https://react.dev/reference/react-dom/hooks/useFormState)
+- [New client-side hooks coming to React 19](https://marmelab.com/blog/2024/01/23/react-19-new-hooks.html)
