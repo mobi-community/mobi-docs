@@ -1,8 +1,14 @@
 import React from "react";
 import { DocsThemeConfig } from "nextra-theme-docs";
+import MobiDocsLogo from "./public/assets/images/mobi-docs.png";
+import Image from "next/image";
 
 const config: DocsThemeConfig = {
-  logo: <span>MOBI DOCS</span>,
+  logo: (
+    <span style={{ fontWeight: "bold" }}>
+      MOBI <br /> DOCS
+    </span>
+  ),
   project: {
     link: "https://github.com/mobi-community/mobi-docs",
   },
