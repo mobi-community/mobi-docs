@@ -13,7 +13,7 @@
 const [state, formAction] = useFormState(fn, initialState, permalink?);
 ```
 
-### 🤔 어떻게 사용할 수 있까요?
+### 🤔 어떻게 사용할 수 있을까요?
 
 1. form 액션이 호출되었을 때 업데이트 될 상태 생성을 위해 컴포넌트의 상단에 `useFormState`를 호출해줍니다.
 
@@ -149,7 +149,7 @@ export async function addToCart(prevState, queryData) {
   // 수량 정보를 받아와서
   const quantity = queryData.get("quantity");
   // 수량의 존재 여부에 따라 다른 message 값을 반환합니다.
-  if (Number(quantity) > 0) {
+  if (quantity > 0) {
     return "정상적으로 추가되었습니다.";
   } else {
     return "🚨 Error! 상품이 매진 되어 추가할 수 없습니다.";
