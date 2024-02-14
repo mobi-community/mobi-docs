@@ -117,6 +117,7 @@ import { useFormState } from "react-dom";
 import { addToCart } from "./actions.js";
 
 function AddToCartForm({ quantity, itemTitle }) {
+  // 초기값은 null이며 form 제출 시 addToCart fn이 실행됩니다.
   const [message, formAction] = useFormState(addToCart, null);
   return (
     <form action={formAction}>
@@ -145,7 +146,9 @@ export default function App() {
 "use server";
 
 export async function addToCart(prevState, queryData) {
+  // 수량 정보를 받아와서
   const quantity = queryData.get("quantity");
+  // 수량의 존재 여부에 따라 다른 message 값을 반환합니다.
   if (Number(quantity) > 0) {
     return "정상적으로 추가되었습니다.";
   } else {
@@ -154,7 +157,73 @@ export async function addToCart(prevState, queryData) {
 }
 ```
 
+> 결과
+
+- 각 버튼 클릭 시 해당 제품 수량에 따른 메시지가 버튼 옆에 렌더링 됩니다.
+- 만약 수량이 없을 경우 의도한 대로 에러 메시지가 보여지게 됩니다.
+
+![스크린샷 2024-02-13 234511](https://github.com/JeongwooHam/FE_Study_Logs/assets/123251211/c3edf1f3-a500-4a84-8f83-312801780bd4)
+
 #### 📍 form 제출 이후 구조화된 정보 보여주기
+
+- 서버 액션의 반환 값은 직렬화 가능한 값이 될 수 있습니다.
+- 반환 값을 아래의 예시와 같이 액션의 성공 여부와 실패 시 보여줄 에러 메시지, 성공 시 보여줄 업데이트 된 정보를 담은 객체 형태로 구현할 수도 있습니다.
+
+> form 컴포넌트
+
+```js
+function AddToCartForm({ quantity, itemTitle }) {
+  const [formState, formAction] = useFormState(addToCart, {});
+  // 성공 여부에 따라 다른 값이 렌더링 되도록 구현할 수 있습니다.
+  return (
+    <form action={formAction}>
+      <h2>{itemTitle}</h2>
+      <input type='hidden' name='quantity' value={quantity} />
+      <button type='submit'>장바구니 추가</button>
+      {formState?.isSuccess && (
+        <div className='toast'>
+          🌟 장바구니에 추가되었습니다! 현재 장바구니에는 총{" "}
+          {formState.cartSize}개의 물품이 담겨 있습니다.
+        </div>
+      )}
+      {formState?.isSuccess === false && (
+        <div className='error'>🚨 Error! {formState.message}</div>
+      )}
+    </form>
+  );
+}
+
+// 위의 예시와 동일한 컴포넌트
+```
+
+> action 함수
+
+```js
+"use server";
+
+export async function addToCart(prevState, queryData) {
+  const quantity = queryData.get("quantity");
+  // 반환 값이 단순 메시지가 아닌 객체 형태가 될 수 있습니다.
+  if (quantity > 0) {
+    return {
+      isSuccess: true,
+      cartSize: 12,
+    };
+  } else {
+    return {
+      isSuccess: false,
+      message: "상품이 매진 되어 추가할 수 없습니다.",
+    };
+  }
+}
+```
+
+> 결과
+
+- 실패 여부에 따라 다른 값이 렌더링되도록 `boolean` 값을 전달할 수 있습니다.
+- 결과에 따라 성공 시 업데이트 된 장바구니 물품 개수가, 실패 시 에러 메시지가 보여집니다.
+
+![스크린샷 2024-02-14 000229](https://github.com/JeongwooHam/FE_Study_Logs/assets/123251211/65b0d198-d37c-4285-84b3-4990503be342)
 
 ### 📢 사용 시 주의할 점
 
@@ -167,8 +236,6 @@ export async function addToCart(prevState, queryData) {
 - `useFormState`는 **form의 제출에 따른 서버의 응답값**을 hydration 작업이 완료되기도 전에 보여지도록 해줍니다.
 - 따라서 서버 컴포넌트와 함께 사용할 때 `useFormState`는 JS가 클라이언트 측에서 실행되기 전에 form을 상호작용 가능하도록 만들어줍니다.
 - 하지만 서버 컴포넌트와 함께 사용하지 않는다면 이 기능은 컴포넌트의 **일반 상태**와 동일합니다.
-
-### 🚨 TroubleShooting
 
 ### 🔎 References
 
