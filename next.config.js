@@ -1,15 +1,25 @@
-const isProd = process.env.NODE_ENV === "production";
+const repository = "/mobi-docs";
+const isProduction = process.env.NODE_ENV === "production";
+const assetPrefix = isProduction ? repository : "";
 
 const withNextra = require("nextra")({
   theme: "nextra-theme-docs",
   themeConfig: "./theme.config.tsx",
 });
 
-module.exports = withNextra({
-  assetPrefix: isProd ? "https://mobi-docs.github.io/mobi-docs/" : "",
-  reactStrictMode: true,
+const nextConfig = {
   images: {
-    loader: "imgix",
-    path: "",
+    unoptimized: true,
   },
-});
+  reactStrictMode: true,
+  swcMinify: true,
+  trailingSlash: true,
+  assetPrefix,
+  basePath: assetPrefix,
+  // output: "export",
+};
+
+module.exports = {
+  ...withNextra(),
+  ...nextConfig,
+};
