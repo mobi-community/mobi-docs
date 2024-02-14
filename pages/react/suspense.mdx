@@ -59,6 +59,52 @@ export default function TodoList() {
 
 ### 🤔 이제는 어떻게 사용할까요?
 
+🧐 작동원리는 이렇습니다!
+
+Suspense는 컴포넌트 트리 전체에 걸쳐 로딩 상태를 통합적으로 관리할 수 있게 도와줍니다. 여러개의 비동기 작업이 동시에 수행이 되는 경우에도, 로딩 표시자를 단 한 번만 표시할 수 있도록 도와줍니다.
+
+Suspense의 핵심적인 동작 방식은 javascript의 Promise를 throw하는 것에 있습니다.
+Promise가 throw되면 React는 해당 컴포넌트의 렌더링을 일시 중단시키고, Promise가 이행(resolve)될 때까지 기다립니다.
+
+이후 Promise가 이행이 될 경우 Suspense 컴포넌트내 children을 재렌더링 시킵니다. 이때는 더 이상 Promise가 throw 되지 않으므로 정상적으로 재렌더링 됩니다.
+
+아래는 Promise의 상태를 추적하며 필요한 동작을 수행할 수 있는 Wrapper 함수입니다.
+
+```typescript
+export const promiseWrapper = <T>(promise: Promise<T>) => {
+  let status = 'pending'; // 현재 상태를 나타내는 변수
+  let result: T; // Promise가 성공했을 때의 결과 값을 저장하는 변수
+
+  const subscription = promise.then(
+    (value) => {
+      status = 'success'; // 상태를 'success'로 변경
+      result = value; // 성공한 경우 결과 값을 저장
+    },
+    (error) => {
+      status = 'error'; // 상태를 'error'로 변경
+      result = error; // 실패한 경우 에러 값을 저장
+    }
+  );
+
+  return {
+    read() {
+      switch (status) {
+        case 'pending':
+          throw subscription; // Suspense 렌더링 (promise 반환)
+        case 'success':
+          return result; // 데이터 반환
+        case 'error':
+          throw result; // 에러를 throw
+        default:
+          throw new Error('알 수 없는 상태'); // 알 수 없는 상태일 경우 에러 throw
+      }
+    },
+  };
+};
+```
+
+🫡 코드는 이렇게 작성할 수 있습니다!
+
 1. 데이터를 가져오는 함수를 만듭니다. 이 함수는 데이터가 없다면 promise를 반환하고 데이터가 있을 경우 todos를 반환합니다.
 
 ```javascript
