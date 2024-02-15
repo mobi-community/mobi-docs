@@ -22,7 +22,7 @@ function App() {
 
 ### 📖 이전에는 어떻게 사용했을까요?
 
-클래스 컴포넌트의 경우 lifecycle 함수인 `componentDidMount()`를 사용하여 구현을 하였고, 함수형 컴포넌트의 경우 `useEffect()`를 통해 구현이 가능합니다.
+클래스 컴포넌트의 경우 lifeCycle 함수인 `componentDidMount()`를 사용하여 구현을 하였고, 함수형 컴포넌트의 경우 `useEffect()`를 통해 구현이 가능합니다.
 
 ```javascript
 export default function TodoList() {
@@ -64,16 +64,16 @@ export default function TodoList() {
 Suspense는 컴포넌트 트리 전체에 걸쳐 로딩 상태를 통합적으로 관리할 수 있게 도와줍니다. 여러개의 비동기 작업이 동시에 수행이 되는 경우에도, 로딩 표시자를 단 한 번만 표시할 수 있도록 도와줍니다.
 
 Suspense의 핵심적인 동작 방식은 javascript의 Promise를 throw하는 것에 있습니다.
-Promise가 throw되면 React는 해당 컴포넌트의 렌더링을 일시 중단시키고, Promise가 이행(resolve)될 때까지 기다립니다.
+Promise가 throw되면 React는 해당 컴포넌트의 렌더링을 일시 중단시키고, Promise가 이행(resolve), 사라질 때까지 기다립니다.
 
-이후 Promise가 이행이 될 경우 Suspense 컴포넌트내 children을 재렌더링 시킵니다. 이때는 더 이상 Promise가 throw 되지 않으므로 정상적으로 재렌더링 됩니다.
+이후 Promise가 이행, 사라질 경우 Suspense 컴포넌트내 children을 재렌더링 시킵니다. 이때는 더 이상 Promise가 throw 되지 않으므로 정상적으로 재렌더링 됩니다.
 
 아래는 Promise의 상태를 추적하며 필요한 동작을 수행할 수 있는 Wrapper 함수입니다.
 
-```typescript
-export const promiseWrapper = <T>(promise: Promise<T>) => {
+```javascript
+export const promiseWrapper = (promise) => {
   let status = 'pending'; // 현재 상태를 나타내는 변수
-  let result: T; // Promise가 성공했을 때의 결과 값을 저장하는 변수
+  let result; // Promise가 성공했을 때의 결과 값을 저장하는 변수
 
   const subscription = promise.then(
     (value) => {
@@ -90,7 +90,7 @@ export const promiseWrapper = <T>(promise: Promise<T>) => {
     read() {
       switch (status) {
         case 'pending':
-          throw subscription; // Suspense 렌더링 (promise 반환)
+          throw subscription; // Suspense 렌더링 (promise를 throw 합니다.)
         case 'success':
           return result; // 데이터 반환
         case 'error':
@@ -105,7 +105,7 @@ export const promiseWrapper = <T>(promise: Promise<T>) => {
 
 🫡 코드는 이렇게 작성할 수 있습니다!
 
-1. 데이터를 가져오는 함수를 만듭니다. 이 함수는 데이터가 없다면 promise를 반환하고 데이터가 있을 경우 todos를 반환합니다.
+1. 데이터를 가져오는 함수를 만듭니다. 이 함수는 데이터가 없다면 promise를 throw를 하고 데이터가 있을 경우 todos를 반환합니다.
 
 ```javascript
 export default function fetchPost() {
@@ -159,31 +159,60 @@ export default function TodoList({ fetchPost }) {
 }
 ```
 
-이때 만약 `fetchPost.read()`의 반환 값이 Promise 타입의 경우 `<Suspense/>`의 `fallback`에 들어가있는 컴포넌트가 보여집니다.
+이때 만약 `fetchPost.read()`의 반환 값이 Promise 타입을 throw 하고 있을경우 `<Suspense/>`의 `fallback`에 들어가있는 컴포넌트가 보여집니다.
 
 ### 실제 코드로 보기
 
-실제 코드는 다음과 같이 사용합니다.
+실제 타입스크립트에서의 코드는 다음과 같이 사용합니다.
 
-```javascript
-export default function Header() {
+```typescript
+export default function App() {
   return (
-    <Suspense fallback={<HeaderSkeleton />}>
-      <HeaderInner />
-    </Suspense>
+    // ReactQuery를 사용하기 위해서는 QueryClientProvider를 적용시켜줍니다.
+    <QueryClientProvider client={new QueryClient()}>
+      <Suspense fallback={<div>Loading...</div>}>
+        <QueryComponent />
+      </Suspense>
+    </QueryClientProvider>
   );
 }
 
 // 리액트 쿼리와 같이 사용할 수 있습니다.
 // 데이터를 가져오고 있는 상태라면 Suspense의 fallback이 보여집니다.
-export default function HeaderInner(){
-    const { data: userList } = useQuery([END_POINTS.USER], getUserList);
 
-    return (
-        <div>
-            {...}
-        </div>
-    )
+type UserType = {
+  userId: number;
+  id: number;
+  title: string;
+  completed: boolean;
+};
+
+const userListOption = {
+  getUserConfig: queryOptions({
+    queryKey: ['userList'],
+    queryFn: async () => {
+      // 지연시간을 걸어주기 위해 일부로 setTimeout 걸어두었습니다.
+      await new Promise((resolve) => {
+        setTimeout(resolve, 1000);
+      });
+      const { data } = await axios.get<UserType[]>('https://jsonplaceholder.typicode.com/todos');
+      return data;
+    },
+  }),
+};
+
+export default function QueryComponent() {
+  // ReactQuery v5부터는 option으로 Suspense를 선택해주는 것이 아닌 useSuspenseQuery를 사용합니다.
+  // useSuspenseQuery를 통해 반환되는 값은 undefind가 아닌 정해두었던 T타입의 데이터만 돌아오기 때문에 undefined일 때의 로직을 생각하지 않아도 됩니다.
+  const { data: userList } = useSuspenseQuery(userListOption.getUserConfig);
+
+  return (
+    <ul>
+      {userList.map((user) => (
+        <li key={user.id}>{user.title}</li>
+      ))}
+    </ul>
+  );
 }
 ```
 
@@ -224,7 +253,7 @@ function TodoList() {
 
   Suspense는 특정한 동작 방식을 준수하는 비동기 작업에 대해서만 정상적으로 동작합니다. 그렇지 않는다면 예상치 못한 에러나 문제가 발생할 수도 있습니다.
 
-  Suspense는 Promise를 캐치하는 방식으로만 동작을 하기 때문에 데이터 로딩 함수가 Promise를 반환하지 않는다면 에러나 문제가 발생할 수도 있습니다. 때문에 이 문제를 해결하기 위해서는 `promiseWrapper()` 함수와 같이 특정 상태일 경우 Promise를 반환하는 함수를 만든다던지 아니면 ReactQuery와 같이 이러한 것들을 지원하는 라이브러리를 사용할 수 있습니다.
+  Suspense는 Promise를 캐치하는 방식으로만 동작을 하기 때문에 데이터 로딩 함수가 Promise를 throw 하지 않는다면 에러나 문제가 발생할 수도 있습니다. 때문에 이 문제를 해결하기 위해서는 `promiseWrapper()` 함수와 같이 특정 상태일 경우 Promise를 throw하는 함수를 만든다던지 아니면 ReactQuery와 같이 이러한 것들을 지원하는 라이브러리를 사용할 수 있습니다.
 
 ### 🔎 References
 
