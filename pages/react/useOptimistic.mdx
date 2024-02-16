@@ -13,7 +13,7 @@
 이 상태는 “낙관적” 상태라고 불리는데, 실제로 작업을 완료하는 데 시간이 걸리더라도 사용자에게 즉시 작업의 결과를 표시하기 위해 일반적으로 사용됩니다.
 
 ```typescript
-const [state, updateFn] = useOptimistic(state, (currentState, optimisticValue) => {});
+const [optimisticState, addOptimistic] = useOptimistic(state, (currentState, optimisticValue) => {});
 }
 ```
 
@@ -23,7 +23,21 @@ const [state, updateFn] = useOptimistic(state, (currentState, optimisticValue) =
 
 현재 상태와 작업에 대한 입력을 가져와 작업이 보류 중인 동안 사용할 낙관적 상태를 적용할 수 있는 방법을 제공합니다.
 
-이를 통해 사용자가 양식을 제출하면 서버의 응답이 변경 사항을 반영할 때까지 기다리는 대신 결과가 즉시 인터페이스로 업데이트 됩니다.
+이를 통해 사용자가 양식을 제출하면 서버의 응답이 변경 사항을 반영할 때까지 기다리는 대신 결과가 즉시 인터페이스로 업데이트됩니다.
+
+> Return Values
+
+| Return Values     | Detail                                                                                                                      |
+| :---------------- | :-------------------------------------------------------------------------------------------------------------------------- |
+| `optimisticState` | - 낙관적인 상태의 경우 `updateFn`에서 반환된 값과 동일합니다. 그렇지 않을 경우 `state`와 동일합니다.                        |
+| `addOptimistic`   | - 낙관적인 업데이트가 있을 경우 호출하는 디스패치 함수입니다. updateFn의 두 번째 매개변수로 넣어줄 값을 넘겨줄 수 있습니다. |
+
+> Parameters
+
+| Parameters                                | Detail                                                                                                               |
+| :---------------------------------------- | :------------------------------------------------------------------------------------------------------------------- |
+| `state`                                   | - 작업이 진행 중이지 않을 때 반환될 값을 의미합니다..                                                                |
+| `updateFn(currentState, optimisticValue)` | - 현재 상태와 addOptimistic에 전달된 낙관적인 값을 취하는 함수로 해당 콜백 함수로 얻을 수 있는 결과 값을 반환합니다. |
 
 만약 TodoList를 만든다고 한다면 다음과 같이 만들 수 있습니다.
 
@@ -69,7 +83,7 @@ function TodoContainer(todoList:TodoType[]) {
 
 아래는 Next.js + TypeScript를 이용하여 만든 TodoList입니다.
 
-아래 코드는 최상위 코드로서 `todoList`를 받아와서 `TodoList`로 전달해주는 역할을 하고 있습니다.
+아래 코드는 최상위 코드로서 `todoList`를 받아와서 `TodoList`로 전달해 주는 역할을 하고 있습니다.
 
 ```typescript
 // Page
@@ -92,9 +106,9 @@ export default async function Home() {
 }
 ```
 
-아래코드에서는 전달받은 `todoList`를 `useOptimistic`의 파라미터 값으로 전달해 주었습니다.
+아래 코드에서는 전달받은 `todoList`를 `useOptimistic`의 파라미터 값으로 전달해 주었습니다.
 
-또한 콜백 함수를 통해서 `addOptimisticAddTodo`가 실행 되었을 경우 보여질 `optimisticTodo`의 모습을 정의해주었습니다.
+또한 콜백 함수를 통해서 `addOptimisticAddTodo`가 실행되었을 경우 보일 `optimisticTodo`의 모습을 정의해 주었습니다.
 
 ```typescript
 // TodoList
@@ -192,3 +206,9 @@ export default function TodoList({ todoList }: Props) {
   );
 }
 ```
+
+### 🔎 References
+
+- [React.dev - useOptimistic](https://www.google.com/search?q=useOptimistic&oq=useOptimistic&gs_lcrp=EgZjaHJvbWUqBggAEEUYOzIGCAAQRRg7MgcIARAAGIAEMgcIAhAAGIAEMgcIAxAAGIAEMgYIBBAAGB4yBggFEEUYPDIGCAYQRRg8MgYIBxBFGDzSAQczNjBqMGo0qAIAsAIA&sourceid=chrome&ie=UTF-8)
+- [Learn the useOptimistic Hook in 19 minutes](https://www.youtube.com/watch?v=wg3xQogkZDA&t=590s)
+- [React 훅: 'useOptimistic'](https://velog.io/@kimkanu/React-%ED%9B%85-useOptimistic)
