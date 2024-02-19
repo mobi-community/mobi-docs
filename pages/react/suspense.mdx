@@ -1,0 +1,263 @@
+## ✨ `suspense`
+
+> React v18.0에 정식 기능으로 출시하였습니다.
+
+### 📑 Summary
+
+`Suspense`를 통하여 작업이 끝날 때까지 렌더링을 잠시 중단시키고 미리 보여줄 컴포넌트를 렌더링 시켜 줄 수 있습니다.
+
+```typescript
+import { Suspense } from 'react';
+
+import QueryComponent from './components/query-component';
+
+function App() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <PromiseComponent /> // 데이터 fetching을 하는 컴포넌트
+    </Suspense>
+  );
+}
+```
+
+### 📖 이전에는 어떻게 사용했을까요?
+
+클래스 컴포넌트의 경우 lifeCycle 함수인 `componentDidMount()`를 사용하여 구현을 하였고, 함수형 컴포넌트의 경우 `useEffect()`를 통해 구현이 가능합니다.
+
+```javascript
+export default function TodoList() {
+  const [todoList, setTodoList] = useState([]);
+  // (1) 초기의 로딩 상태를 true로 만들어둡니다.
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    fetch('https://jsonplaceholder.typicode.com/todos')
+      .then((res) => res.json())
+      .then((newTodoList) => {
+        setTodoList(newTodoList);
+        setLoading(false);
+      })
+      .catch(() => setError(true));
+  }, []);
+
+  // (3) 값을 불러오기 이전의 경우 loading 화면이 보입니다.
+  if (loading) return <p>로딩중입니다.</p>;
+  if (error) return <p>에러가 발생하였습니다.</p>;
+
+  return (
+    <>
+      {todoList.map((todo) => (
+        <div>{todo.title}</div>
+      ))}
+    </>
+  );
+}
+```
+
+이처럼 변경되는 값을 만들어주기 위해서 상태(state)를 통해 직접 보여줄 컴포넌트를 결정 할 수 있었습니다.
+
+### 🤔 이제는 어떻게 사용할까요?
+
+🧐 작동원리는 이렇습니다!
+
+Suspense는 컴포넌트 트리 전체에 걸쳐 로딩 상태를 통합적으로 관리할 수 있게 도와줍니다. 여러개의 비동기 작업이 동시에 수행이 되는 경우에도, 로딩 표시자를 단 한 번만 표시할 수 있도록 도와줍니다.
+
+Suspense의 핵심적인 동작 방식은 javascript의 Promise를 throw하는 것에 있습니다.
+Promise가 throw되면 React는 해당 컴포넌트의 렌더링을 일시 중단시키고, Promise가 이행(resolve), 사라질 때까지 기다립니다.
+
+이후 Promise가 이행, 사라질 경우 Suspense 컴포넌트내 children을 재렌더링 시킵니다. 이때는 더 이상 Promise가 throw 되지 않으므로 정상적으로 재렌더링 됩니다.
+
+아래는 Promise의 상태를 추적하며 필요한 동작을 수행할 수 있는 Wrapper 함수입니다.
+
+```javascript
+export const promiseWrapper = (promise) => {
+  let status = 'pending'; // 현재 상태를 나타내는 변수
+  let result; // Promise가 성공했을 때의 결과 값을 저장하는 변수
+
+  const subscription = promise.then(
+    (value) => {
+      status = 'success'; // 상태를 'success'로 변경
+      result = value; // 성공한 경우 결과 값을 저장
+    },
+    (error) => {
+      status = 'error'; // 상태를 'error'로 변경
+      result = error; // 실패한 경우 에러 값을 저장
+    }
+  );
+
+  return {
+    read() {
+      switch (status) {
+        case 'pending':
+          throw subscription; // Suspense 렌더링 (promise를 throw 합니다.)
+        case 'success':
+          return result; // 데이터 반환
+        case 'error':
+          throw result; // 에러를 throw
+        default:
+          throw new Error('알 수 없는 상태'); // 알 수 없는 상태일 경우 에러 throw
+      }
+    },
+  };
+};
+```
+
+🫡 코드는 이렇게 작성할 수 있습니다!
+
+1. 데이터를 가져오는 함수를 만듭니다. 이 함수는 데이터가 없다면 promise를 throw를 하고 데이터가 있을 경우 todos를 반환합니다.
+
+```javascript
+export default function fetchPost() {
+  let todos = null;
+  const promise = fetch('https://jsonplaceholder.typicode.com/todos')
+    .then((res) => res.json())
+    .then((data) => {
+      setTimeout(() => {
+        todos = data;
+      }, 3000);
+    });
+  return {
+    read() {
+      if (todos === null) {
+        throw promise;
+      } else {
+        return todos;
+      }
+    },
+  };
+}
+```
+
+2. `<Suspense/>`를 이용하여 사용하는 컴포넌트를 감싸줍니다.
+
+```javascript
+function App() {
+  return (
+    <Suspense fallback={<p>로딩중입니다.</p>}>
+      <TodoList fetchPost={fetchPost()} />
+    </Suspense>
+  );
+}
+```
+
+3. props로 전달받아 실행하여 줍니다.
+
+```javascript
+import React from 'react';
+
+export default function TodoList({ fetchPost }) {
+  const todoList = fetchPost.read();
+
+  return (
+    <>
+      {todoList.map((todo) => (
+        <div>{todo.title}</div>
+      ))}
+    </>
+  );
+}
+```
+
+이때 만약 `fetchPost.read()`의 반환 값이 Promise 타입을 throw 하고 있을경우 `<Suspense/>`의 `fallback`에 들어가있는 컴포넌트가 보여집니다.
+
+### 실제 코드로 보기
+
+실제 타입스크립트에서의 코드는 다음과 같이 사용합니다.
+
+```typescript
+export default function App() {
+  return (
+    // ReactQuery를 사용하기 위해서는 QueryClientProvider를 적용시켜줍니다.
+    <QueryClientProvider client={new QueryClient()}>
+      <Suspense fallback={<div>Loading...</div>}>
+        <QueryComponent />
+      </Suspense>
+    </QueryClientProvider>
+  );
+}
+
+// 리액트 쿼리와 같이 사용할 수 있습니다.
+// 데이터를 가져오고 있는 상태라면 Suspense의 fallback이 보여집니다.
+
+type UserType = {
+  userId: number;
+  id: number;
+  title: string;
+  completed: boolean;
+};
+
+const userListOption = {
+  getUserConfig: queryOptions({
+    queryKey: ['userList'],
+    queryFn: async () => {
+      // 지연시간을 걸어주기 위해 일부로 setTimeout 걸어두었습니다.
+      await new Promise((resolve) => {
+        setTimeout(resolve, 1000);
+      });
+      const { data } = await axios.get<UserType[]>('https://jsonplaceholder.typicode.com/todos');
+      return data;
+    },
+  }),
+};
+
+export default function QueryComponent() {
+  // ReactQuery v5부터는 option으로 Suspense를 선택해주는 것이 아닌 useSuspenseQuery를 사용합니다.
+  // useSuspenseQuery를 통해 반환되는 값은 undefind가 아닌 정해두었던 T타입의 데이터만 돌아오기 때문에 undefined일 때의 로직을 생각하지 않아도 됩니다.
+  const { data: userList } = useSuspenseQuery(userListOption.getUserConfig);
+
+  return (
+    <ul>
+      {userList.map((user) => (
+        <li key={user.id}>{user.title}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+### 📢 사용 시 주의할 점
+
+> Suspense는 Effect나 이벤트 핸들러 내부에서 페칭하는 경우를 감지하지 않습니다.
+
+다음 코드에서는 동작하지 않습니다.
+
+```javascript
+function App() {
+  return (
+    <Suspense fallback={<p>로딩중입니다.</p>}>
+      <TodoList />
+    </Suspense>
+  );
+}
+
+function TodoList() {
+  const [todoList, setTodoList] = useState([]);
+
+  useEffect(() => {
+    fetch('https://jsonplaceholder.typicode.com/todos')
+    .then((res) => setTodoList(res.json()));
+  }, []);
+
+  return (
+    <div>
+    {todoList.map(todo=> <OneTodo {...todo}>)}
+    </div>
+  );
+}
+```
+
+### 🚨 TroubleShooting
+
+- **Suspense와 호환되지 않는 비동기 작업**
+
+  Suspense는 특정한 동작 방식을 준수하는 비동기 작업에 대해서만 정상적으로 동작합니다. 그렇지 않는다면 예상치 못한 에러나 문제가 발생할 수도 있습니다.
+
+  Suspense는 Promise를 캐치하는 방식으로만 동작을 하기 때문에 데이터 로딩 함수가 Promise를 throw 하지 않는다면 에러나 문제가 발생할 수도 있습니다. 때문에 이 문제를 해결하기 위해서는 `promiseWrapper()` 함수와 같이 특정 상태일 경우 Promise를 throw하는 함수를 만든다던지 아니면 ReactQuery와 같이 이러한 것들을 지원하는 라이브러리를 사용할 수 있습니다.
+
+### 🔎 References
+
+- [React-Suspense-Reference](https://react.dev/reference/react/Suspense)
+- [[React] Suspense을 사용해 선언적으로 로딩 화면 구현하기](https://lasbe.tistory.com/160)
+- [React 로딩처리와 Suspense의 등장](https://www.jungmin.me/post/react-%EB%A1%9C%EB%94%A9%EC%B2%98%EB%A6%AC%EC%99%80-suspense-%EB%93%B1%EC%9E%A5)
+- [React Suspense의 내부 동작방식](https://www.jungmin.me/post/react-suspense-%EB%82%B4%EB%B6%80-%EB%8F%99%EC%9E%91%EB%B0%A9%EC%8B%9D)
