@@ -13,6 +13,27 @@
 const [state, formAction] = useFormState(fn, initialState, permalink?);
 ```
 
+### 📢 사용 시 주의할 점
+
+> import를 제대로 하자!
+
+- `useFormState`는 `react`가 아닌 `react-dom`에서 import 되어야 합니다.
+
+> React 서버 컴포넌트를 지원하는 프레임워크와 함께 사용할 경우
+
+- `useFormState`는 **form의 제출에 따른 서버의 응답값**을 hydration 작업이 완료되기도 전에 보여지도록 해줍니다.
+- 따라서 서버 컴포넌트와 함께 사용할 때 `useFormState`는 JS가 클라이언트 측에서 실행되기 전에 form을 상호작용 가능하도록 만들어줍니다.
+- 하지만 서버 컴포넌트와 함께 사용하지 않는다면 이 기능은 컴포넌트의 **일반 상태**와 동일합니다.
+
+```
+👩‍💻 여기서 잠깐! hydration이란 무엇일까요?
+```
+
+- Hydration이란, Server-Side에서 렌더링 된 정적 페이지(HTML)와 번들링 된 JS 파일을 클라이언트에게 보내면, Client-Side에서 HTML 코드와 JS(React) 코드를 서로 매칭시키는 과정을 의미합니다.
+- JS 코드들이 DOM 요소 위에 물을 채우듯 필요로 하던 요소들을 채운다하여 붙여진 이름이라고 하는데, 수분기 없는 정적 웹 페이지에 물을 주는 느낌이라고 이해하면 좋습니다.
+
+- hydration에 대해 자세히 학습하고 싶다면, [Hydration 관련 포스트](https://velog.io/@hamjw0122/Next.js-Hydration#-ssr%EA%B3%BC-hydration%EC%9D%98-%EB%AC%B8%EC%A0%9C%EC%A0%90)를 참고하세요!
+
 ### 🤔 어떻게 사용할 수 있을까요?
 
 1. form 액션이 호출되었을 때 업데이트 될 상태 생성을 위해 컴포넌트의 상단에 `useFormState`를 호출해줍니다.
@@ -167,6 +188,20 @@ export async function addToCart(prevState, queryData) {
 #### 📍 form 제출 이후 구조화된 정보 보여주기
 
 - 서버 액션의 반환 값은 직렬화 가능한 값이 될 수 있습니다.
+
+> ⛓️ 직렬화(Serialization)
+
+- 직렬화란, 앞에서도 짧게 언급했지만 **데이터를 일련의 바이트로 변환하는 과정**을 의미합니다.
+  - 데이터는 원래의 형식을 유지하면서 전송 가능한 형태로 변환되어 파일에 저장하거나 네트워크를 통해 전송할 수 있게 됩니다.
+- 예를 들어, 숫자, 문자열, 배열, 객체 등의 데이터는 대부분 **직렬화 될 수 있는 값**에 해당합니다.
+- 서버 액션에서 반환하는 값은 이러한 데이터 형식에 해당할 수 있으므로 전송/저장이 가능합니다.
+
+```
+👩‍💻 서버 액션의 반환 값이 직렬화 가능하다는 것은, 해당 값이 전송 및 저장될 수 있는 형태로 변환될 수 있음을 의미합니다.
+```
+
+<hr />
+
 - 반환 값을 아래의 예시와 같이 액션의 성공 여부와 실패 시 보여줄 에러 메시지, 성공 시 보여줄 업데이트 된 정보를 담은 객체 형태로 구현할 수도 있습니다.
 
 > form 컴포넌트
@@ -224,18 +259,6 @@ export async function addToCart(prevState, queryData) {
 - 결과에 따라 성공 시 업데이트 된 장바구니 물품 개수가, 실패 시 에러 메시지가 보여집니다.
 
 ![스크린샷 2024-02-14 000229](https://github.com/JeongwooHam/FE_Study_Logs/assets/123251211/65b0d198-d37c-4285-84b3-4990503be342)
-
-### 📢 사용 시 주의할 점
-
-> import를 제대로 하자!
-
-- `useFormState`는 `react`가 아닌 `react-dom`에서 import 되어야 합니다.
-
-> React 서버 컴포넌트를 지원하는 프레임워크와 함께 사용할 경우
-
-- `useFormState`는 **form의 제출에 따른 서버의 응답값**을 hydration 작업이 완료되기도 전에 보여지도록 해줍니다.
-- 따라서 서버 컴포넌트와 함께 사용할 때 `useFormState`는 JS가 클라이언트 측에서 실행되기 전에 form을 상호작용 가능하도록 만들어줍니다.
-- 하지만 서버 컴포넌트와 함께 사용하지 않는다면 이 기능은 컴포넌트의 **일반 상태**와 동일합니다.
 
 ### 🔎 References
 
