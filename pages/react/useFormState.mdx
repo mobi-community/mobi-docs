@@ -167,7 +167,7 @@ export default function App() {
 "use server";
 
 export async function addToCart(prevState, queryData) {
-  // 수량 정보를 받아와서
+  // 수량 정보를 받아옵니다.
   const quantity = queryData.get("quantity");
   // 수량의 존재 여부에 따라 다른 message 값을 반환합니다.
   if (quantity > 0) {
