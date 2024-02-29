@@ -82,10 +82,23 @@ export default function App() {
 🌟 GET
 - 지정된 리소스에 대한 표현을 요청합니다.
 - GET을 사용한 요청은 오직 데이터 조회만 할 수 있습니다.
+- 쿼리 문자열
+  - 실행 시 요청하는 데이터가 HTTP 요청 URL의 일부로 포함되어 보내집니다.
+  - URL이 브라우저의 히스토리에 저장되고 로그에 기록되며 웹 서버에도 기록되므로
+    보안에 민감한 정보를 다룰 때 문제가 될 수 있습니다.
 
 🌟 POST
 - 지정된 리소스에 엔티티를 제출합니다.
 - 보통 서버의 상태 변화 또는 부수 효과를 일으킵니다.
+- 요청하는 데이터를 HTTP 요청 본문에 포함시켜 보내며 이 데이터는 URL에 노출되지 않습니다.
+  ➡️ 아예 뜯어볼 수 없는 것은 아니지만 POST가 GET보다 보안적인 측면에서 우월하다고 할 수 있습니다.
+
+🤔 보안적으로 안전하지 않다는 것은 무엇을 의미할까요?
+
+- HTTP 통신 자체는 평문 통신입니다.
+  - 평문 통신: 암호화 되지 않은 데이터를 그대로 전송하는 통신 방식
+- 이러한 HTTP 자체 특성 상 데이터가 노출될 위험이 있으므로
+  중요한 정보를 전송할 때에는 반드시 암호화하여 전송해야 합니다.
 ```
 
 4. `action`
@@ -114,7 +127,7 @@ export default function App() {
 
 #### 📍 `form` 제출 중 `pending` 상태 보여주기
 
-- `form`이 제출되고 있는 중에 `pending` 상태를 보여주기 위해 `form` 요소 내부에서 렌더링 되는 컴포넌트 안에 `useFormStatus` 훅 함수를 호출하고 반환되는 `pending` 속성을 읽어올 수 있습니다.
+- `form`이 제출되고 있는 중에 `pending` 상태를 보여주기 위해 `form` 요소 내부에서 렌더링 되는 **컴포넌트** 안에 `useFormStatus` 훅 함수를 호출하고 반환되는 `pending` 속성을 읽어올 수 있습니다.
 
 ```js
 import { useFormStatus } from "react-dom";
@@ -123,6 +136,7 @@ import { submitForm } from "./actions.js"; // submit 될 경우 실행할 함수
 function Submit() {
   // pending으로 구조분해할당하여 사용합니다.
   // 첫 번째 예시처럼 status 변수에 담은 뒤 status.pending으로 사용할 수도 있습니다.
+  // 특정 form에 대한 상태 정보를 반환하므로 form 요소의 자식으로 정의되어야 합니다.
   const { pending } = useFormStatus();
   // pending 상태일 때는 제출 중임을 나타내는 텍스트를 보여주면서 disabled 되도록 처리할 수 있습니다.
   return (
