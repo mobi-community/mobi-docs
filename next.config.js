@@ -1,7 +1,3 @@
-const repository = "/mobi-docs";
-const isProduction = process.env.NODE_ENV === "production";
-const assetPrefix = isProduction ? repository : "";
-
 const withNextra = require("nextra")({
   theme: "nextra-theme-docs",
   themeConfig: "./theme.config.tsx",
@@ -14,7 +10,7 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   trailingSlash: true,
-  assetPrefix,
+  assetPrefix: '/',
   basePath: assetPrefix,
   // output: "export",
 };
